@@ -9,8 +9,10 @@ using namespace std;
 using namespace cv;
 
 Mat imgOriginal, imgGray, imgBlur, imgCanny, imgDil, imgErode;
-Mat imgThre;
-vector<Point> initialPoint;
+Mat imgThre, imgWarp, imgCrop;
+vector<Point> initialPoint, docPoint;
+
+float w = 420, h = 596;
 
 float WIDTH_SCALE = 0.5;
 float HEIGTH_SCALE = 0.5;
@@ -107,6 +109,41 @@ void drawPoints(vector<Point> points, Scalar color)
     }
 }
 
+vector<Point> reorder(vector<Point> points)
+{
+    vector<Point> newPoint;
+    vector<int> sumPoints, subPoints;
+
+    for (int i = 0; i < points.size(); i++)
+    {
+        sumPoints.push_back(points[i].x + points[i].y);
+        subPoints.push_back(points[i].x - points[i].y);
+    }
+
+    // point index : 0
+    newPoint.push_back(points[min_element(sumPoints.begin(), sumPoints.end()) - sumPoints.begin()]);
+    // point index : 1
+    newPoint.push_back(points[max_element(subPoints.begin(), subPoints.end()) - subPoints.begin()]);
+    // point index : 2
+    newPoint.push_back(points[min_element(subPoints.begin(), subPoints.end()) - subPoints.begin()]);
+    // point index : 3
+    newPoint.push_back(points[max_element(sumPoints.begin(), sumPoints.end()) - sumPoints.begin()]);
+
+    return newPoint;
+}
+
+Mat getWarp(Mat imgSrc, vector<Point> points, float width, float height)
+{
+    //dst 포인트는 워프 적용후 각 포인트를 가리킨다.
+    Point2f src[4] = {points[0], points[1], points[2], points[3]};
+    Point2f dst[4] = {{0.0f, 0.0f}, {width, 0.0f}, {0.0f, height}, {width, height}};
+
+    Mat matrix = getPerspectiveTransform(src, dst);
+    warpPerspective(imgSrc, imgWarp, matrix, Point(width, height));
+
+    return imgWarp;
+}
+
 int main()
 {
     int rtn = 0;
@@ -115,7 +152,7 @@ int main()
     imgOriginal = imread(Path);
     checkImgLoaded(imgOriginal);
 
-    resize(imgOriginal, imgOriginal, Size(), WIDTH_SCALE, HEIGTH_SCALE);
+    // resize(imgOriginal, imgOriginal, Size(), WIDTH_SCALE, HEIGTH_SCALE);
 
     /*    Steps to do...
 
@@ -131,10 +168,23 @@ int main()
     // 2. get Contours - biggest
     // 사각형을 이루는 포인트를 반환한다.
     initialPoint = getContours(imgThre);
-    drawPoints(initialPoint, Scalar(0, 0, 255));
+    // drawPoints(initialPoint, Scalar(0, 0, 255));
+
+    docPoint = reorder(initialPoint);
+    // drawPoints(docPoint, Scalar(0, 255, 0));
+
+    // Warp
+    imgWarp = getWarp(imgOriginal, docPoint, w, h);
+
+    // Crop each side for minus 5 pixel.
+    int cropVal = 5;
+    Rect roi(cropVal, cropVal, w - (cropVal * 2), h - (cropVal * 2));
+    imgCrop = imgWarp(roi);
 
     imshow("imgOriginal", imgOriginal);
     imshow("img Dilation", imgThre);
+    imshow("img Warp", imgWarp);
+    imshow("img Crop", imgCrop);
 
     rtn = waitKey(0);
     if (rtn == 27)
