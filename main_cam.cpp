@@ -12,7 +12,7 @@ Mat imgOriginal, imgGray, imgBlur, imgCanny, imgDil, imgErode;
 Mat imgThre, imgWarp, imgCrop;
 vector<Point> initialPoint, docPoint;
 
-float w = 420, h = 596;
+float w = 596, h = 420;
 
 float WIDTH_SCALE = 0.5;
 float HEIGTH_SCALE = 0.5;
@@ -69,7 +69,7 @@ vector<Point> getContours(Mat imgDil)
 
             if (area > maxArea && conPoly[i].size() == 4)
             {
-                drawContours(imgOriginal, conPoly, i, Scalar(255, 0, 255), 5);
+                drawContours(imgOriginal, conPoly, i, Scalar(255, 0, 255), 2);
 
                 // 사각형 요소에 대해서 조건문을 진행시키고, maxArea를 갱신하면서 최대 넓이를 갖는 윤곽선을 찾아낸다.
                 biggest = {conPoly[i][0], conPoly[i][1], conPoly[i][2], conPoly[i][3]};
@@ -164,6 +164,7 @@ int main()
 
         // 1. img Preprecessing
         imgThre = preProcessing(imgOriginal);
+        imshow("imgThre", imgThre);
 
         // 2. get Contours - biggest
         // 사각형을 이루는 포인트를 반환한다.
@@ -181,11 +182,17 @@ int main()
             // 3. Warp Img.
             imgWarp = getWarp(imgOriginal, docPoint, w, h);
         }
-
         imshow("imgOriginal", imgOriginal);
 
         if (!imgWarp.empty())
-            imshow("img Warp", imgWarp);
+        {
+            // Crop each side for minus 5 pixel.
+            int cropVal = 15;
+            Rect roi(cropVal, cropVal, w - (cropVal * 2), h - (cropVal * 2));
+            imgCrop = imgWarp(roi);
+
+            imshow("img Warp", imgCrop);
+        }
         else
             imshow("img Warp", 0);
 
@@ -203,11 +210,6 @@ int main()
     3. Warp Img.
 
     */
-
-    // Crop each side for minus 5 pixel.
-    // int cropVal = 5;
-    // Rect roi(cropVal, cropVal, w - (cropVal * 2), h - (cropVal * 2));
-    // imgCrop = imgWarp(roi);
 
     // imshow("imgOriginal", imgOriginal);
     // imshow("img Dilation", imgThre);
