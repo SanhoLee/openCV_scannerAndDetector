@@ -14,31 +14,35 @@ int main()
     VideoCapture cap(0);
     Mat img;
 
-    String XML_PATH = "xmlFile/haarcascade_frontalface_default.xml";
+    String XML_PATH = "xmlFile/haarcascade_russian_plate_number.xml";
 
-    CascadeClassifier faceCascade;
-    faceCascade.load(XML_PATH);
+    CascadeClassifier plateCascade;
+    plateCascade.load(XML_PATH);
 
     // check xml file loading is success or not
-    if (faceCascade.empty())
+    if (plateCascade.empty())
     {
         cout << "XML file not loaded ! " << endl;
     }
 
     // detect된 객체를 표시할 사각형 자료형을 갖는 벡터를 정의
-    vector<Rect> faces;
+    vector<Rect> plates;
 
     while (true)
     {
         cap.read(img);
-        faceCascade.detectMultiScale(img, faces, 1.1, 3);
+        plateCascade.detectMultiScale(img, plates, 1.1, 3);
 
         // print out lines for detected boundary
-        for (int i = 0; i < faces.size(); i++)
+        for (int i = 0; i < plates.size(); i++)
         {
-            rectangle(img, faces[i].tl(), faces[i].br(), Scalar(255, 0, 255), 3);
+            rectangle(img, plates[i].tl(), plates[i].br(), Scalar(255, 0, 255), 3);
+
+            Mat imgCrop = img(plates[i]);
+            // imshow(to_string(i), imgCrop);
+            imwrite("plates/" + to_string(i) + ".png", imgCrop);
         }
-        putText(img, "FACE DETECTTED", faces[0].tl(), FONT_HERSHEY_DUPLEX, 1, Scalar(0, 0, 255), 2);
+        // putText(img, "FACE DETECTTED", plates[0].tl(), FONT_HERSHEY_DUPLEX, 1, Scalar(0, 0, 255), 2);
         imshow("Image", img);
 
         rtnKey = waitKey(1);
